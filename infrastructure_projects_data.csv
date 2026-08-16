@@ -1,0 +1,9 @@
+Project_Name,Sector,Country,CapEx_USD_Million,Annual_Generation_MWh,Base_Tariff_USD_MWh,Project_Lifetime_Years,Annual_OpEx_USD_Million,WACC_Percent,Tax_Rate_Percent,Degradation_Rate_Percent
+Rajasthan 100MW Solar Park,Solar Energy,India,30.0,180000,48.0,20,1.5,8.0,20.0,0.5
+Tamil Nadu 50MW Wind Farm,Wind Energy,India,42.0,130000,55.0,25,2.2,8.5,20.0,0.3
+Gujarat Desalination Facility,Water Treatment,India,40.0,95000,72.0,30,3.2,7.5,18.0,0.2
+Bhadla Solar Complex Extension,Solar Energy,India,28.0,175000,45.0,20,1.4,7.8,20.0,0.5
+Atacama Solar Power Hub,Solar Energy,Chile,35.0,210000,42.0,25,1.6,7.2,19.0,0.4
+North Sea Offshore Wind Demonstration,Wind Energy,UK,65.0,220000,68.0,25,3.8,6.8,19.0,0.3
+Karnataka Solar PV Hub,Solar Energy,India,22.0,140000,46.0,20,1.2,8.0,20.0,0.5
+Maharashtra Biogas & Bio-Energy Plant,Biomass,India,15.0,60000,62.0,15,1.5,9.5,20.0,0.6
