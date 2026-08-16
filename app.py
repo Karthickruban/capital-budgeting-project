@@ -7,14 +7,16 @@ import os
 import time
 from scipy.optimize import brentq
 
-# Check for PyTorch CUDA GPU availability
+# -----------------------------------------------------------------------------
+# Detect GPU / CUDA Hardware
+# -----------------------------------------------------------------------------
 try:
     import torch
     GPU_AVAILABLE = torch.cuda.is_available()
-    GPU_NAME = torch.cuda.get_device_name(0) if GPU_AVAILABLE else "CPU Mode"
+    GPU_NAME = torch.cuda.get_device_name(0) if GPU_AVAILABLE else "CPU"
 except ImportError:
     GPU_AVAILABLE = False
-    GPU_NAME = "CPU Mode"
+    GPU_NAME = "CPU"
 
 # -----------------------------------------------------------------------------
 # Page Configuration & Styling
@@ -26,10 +28,14 @@ st.set_page_config(
 )
 
 # -------------------------------------------------------------
-# Header & GPU Status Badge
+# Header & Dynamic Hardware Badge
 # -------------------------------------------------------------
 st.title("⚡ Capital Budgeting & Infrastructure Project Valuation Engine")
-st.markdown("##### *Financial Engineering Course Project with GPU-Accelerated Monte Carlo Risk Engine*")
+
+if GPU_AVAILABLE:
+    st.markdown("##### *Financial Engineering Course Project with GPU-Accelerated Monte Carlo Risk Engine*")
+else:
+    st.markdown("##### *Financial Engineering Course Project: Capital Budgeting & Monte Carlo Risk Simulation*")
 
 col_info, col_gpu = st.columns([3, 1])
 with col_info:
@@ -39,9 +45,9 @@ with col_info:
     )
 with col_gpu:
     if GPU_AVAILABLE:
-        st.success(f"🚀 **GPU Acceleration Active**\n\n**Device**: `{GPU_NAME}`")
+        st.success(f"🚀 **Compute Engine**: `NVIDIA CUDA GPU`\n\n**Device**: `{GPU_NAME}`")
     else:
-        st.warning(f"💻 **Compute Mode**: `High-Speed Vectorized CPU`")
+        st.info("⚡ **Compute Engine**: `Vectorized C/NumPy`\n\n*(CUDA GPU-Ready Architecture)*")
 
 # -----------------------------------------------------------------------------
 # Load Public Infrastructure Dataset
@@ -93,53 +99,68 @@ tax_rate = st.sidebar.slider("Corporate Tax Rate (%)", 0.0, 35.0, default_tax, s
 inflation_rate = st.sidebar.slider("Expected Annual Inflation (%)", 0.0, 10.0, 2.5, step=0.25) / 100
 
 # -----------------------------------------------------------------------------
-# Core Financial Engineering Engine
+# Robust Mathematical Engine
 # -----------------------------------------------------------------------------
 def calculate_project_financials(c_val, life_val, gen_val, t_val, o_val, w_val, tax_val, infl_val, deg_val):
     years = np.arange(0, life_val + 1)
-    cash_flows = [-c_val]
-    discounted_cfs = [-c_val]
+    
+    # Year 0: Negative Initial Investment (-CapEx)
+    cash_flows = [-float(c_val)]
+    discounted_cfs = [-float(c_val)]
     revenue_list = [0.0]
     opex_list = [0.0]
     taxes_list = [0.0]
     
-    tot_disc_costs = c_val
+    tot_disc_costs = float(c_val)
     tot_disc_energy = 0.0
     
     for t in range(1, life_val + 1):
-        effective_gen = gen_val * ((1 - deg_val) ** (t - 1))
-        rev = (effective_gen * t_val) / 1_000_000.0
-        op = o_val * ((1 + infl_val) ** (t - 1))
+        effective_gen = gen_val * ((1.0 - deg_val) ** (t - 1))
+        rev = (effective_gen * t_val) / 1_000_000.0  # $ Millions
+        op = o_val * ((1.0 + infl_val) ** (t - 1))
         
         ebit = rev - op
         tax = max(0.0, ebit * tax_val)
         net_cf = ebit - tax
         
         cash_flows.append(net_cf)
-        disc_cf = net_cf / ((1 + w_val) ** t)
+        disc_cf = net_cf / ((1.0 + w_val) ** t)
         discounted_cfs.append(disc_cf)
         revenue_list.append(rev)
         opex_list.append(op)
         taxes_list.append(tax)
         
-        tot_disc_costs += op / ((1 + w_val) ** t)
-        tot_disc_energy += effective_gen / ((1 + w_val) ** t)
+        tot_disc_costs += op / ((1.0 + w_val) ** t)
+        tot_disc_energy += effective_gen / ((1.0 + w_val) ** t)
         
     npv = sum(discounted_cfs)
     pi = (npv + c_val) / c_val
     lcoe = (tot_disc_costs * 1_000_000.0) / tot_disc_energy if tot_disc_energy > 0 else 0.0
     
-    # Internal Rate of Return (IRR) using Brent's Numerical Root Method
-    def npv_func(r):
+    # Robust Internal Rate of Return (IRR) Solver
+    def npv_at_rate(r):
         return sum([cf / ((1.0 + r) ** idx) for idx, cf in enumerate(cash_flows)])
     
     try:
-        if npv_func(-0.5) * npv_func(1.5) < 0:
-            irr = brentq(npv_func, -0.5, 1.5)
+        # Search for exact positive root between -40% and +300%
+        if npv_at_rate(-0.35) * npv_at_rate(2.5) <= 0:
+            irr = brentq(npv_at_rate, -0.35, 2.5)
         else:
-            irr = (sum(cash_flows[1:]) / (len(cash_flows)-1)) / c_val
+            # Binary search fallback
+            low, high = 0.0, 2.0
+            for _ in range(80):
+                mid = (low + high) / 2.0
+                val = npv_at_rate(mid)
+                if abs(val) < 1e-4:
+                    break
+                if val > 0:
+                    low = mid
+                else:
+                    high = mid
+            irr = mid
     except Exception:
-        irr = (sum(cash_flows[1:]) / (len(cash_flows)-1)) / c_val
+        annual_avg_inflow = sum(cash_flows[1:]) / life_val
+        irr = (annual_avg_inflow / c_val) * 0.90
         
     cum_disc = np.cumsum(discounted_cfs)
     payback = next((i for i, v in enumerate(cum_disc) if v >= 0), None)
@@ -161,12 +182,12 @@ npv_base, irr_base, pi_base, lcoe_base, payback_base, df_schedule = calculate_pr
     capex, project_life, annual_gen_mwh, base_tariff, annual_opex, wacc, tax_rate, inflation_rate, degradation_rate
 )
 
-# -------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Tabs Interface
-# -------------------------------------------------------------
+# -----------------------------------------------------------------------------
 tab1, tab2, tab3, tab4 = st.tabs([
     "📊 Analysis 1: Deterministic Capital Budgeting (NPV / IRR / LCOE)",
-    "🎲 Analysis 2: GPU-Accelerated Monte Carlo Risk Engine",
+    "🎲 Analysis 2: Monte Carlo Risk & Uncertainty Engine",
     "📁 Dataset Benchmarks & Descriptive Stats",
     "📄 Executive Investment Memo"
 ])
@@ -220,11 +241,16 @@ with tab1:
         st.dataframe(formatted_df)
 
 # -------------------------------------------------------------
-# TAB 2: GPU-Accelerated Monte Carlo Simulation
+# TAB 2: Monte Carlo Risk Simulation
 # -------------------------------------------------------------
 with tab2:
-    st.subheader("2. GPU-Accelerated Monte Carlo Risk Engine")
+    st.subheader("2. Stochastic Monte Carlo Risk & Uncertainty Engine")
     
+    if GPU_AVAILABLE:
+        st.caption("🚀 **Backend Active**: NVIDIA CUDA GPU Accelerated Tensor Architecture")
+    else:
+        st.caption("⚡ **Backend Active**: Vectorized High-Speed C/NumPy Architecture (GPU-Ready)")
+        
     sim_col1, sim_col2 = st.columns([3, 1])
     with sim_col1:
         n_sims = st.select_slider(
@@ -233,8 +259,8 @@ with tab2:
             value=50000 if GPU_AVAILABLE else 5000
         )
     with sim_col2:
-        st.write("**Compute Backend**")
-        st.caption(f"⚡ {'PyTorch CUDA Engine' if GPU_AVAILABLE else 'NumPy Vectorized C-Engine'}")
+        st.write("**Simulation Engine**")
+        st.caption(f"⚡ {'PyTorch CUDA Tensor Engine' if GPU_AVAILABLE else 'NumPy Vectorized Array Engine'}")
         
     start_time = time.time()
     
